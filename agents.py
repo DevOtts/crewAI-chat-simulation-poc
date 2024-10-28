@@ -1,5 +1,7 @@
-from crewai import Agent
+from crewai import Agent, Task
 from textwrap import dedent
+from typing import List
+import os
 
 class AgentFactory:
     @staticmethod
@@ -58,3 +60,49 @@ class AgentFactory:
                 "temperature": 0.3
             }
         )
+
+    @staticmethod
+    def create_conversation_agent(name: str, role: str, backstory: str) -> Agent:
+        return Agent(
+            role=f"{name} - {role}",
+            goal=f"Engage in a natural and short conversation as {name}, a {role}, with the following backstory: {backstory}",
+            backstory=backstory,
+            verbose=True,
+            allow_delegation=False,
+            tools=[],
+            llm_config={
+                "model": "gpt-3.5-turbo",
+                "temperature": 0.7,
+                "request_timeout": 120
+            }
+        )
+
+    @staticmethod
+    def create_response(participant, conversation_history: List[str], last_message: str) -> str:
+        context = "\n".join(conversation_history)
+        
+        # Extract name and role from participant
+        name = participant.name
+        role = participant.role
+        
+        prompt = f"""
+        You are {name}, a {role}.
+        Backstory: {participant.backstory}
+        
+        Previous conversation:
+        {context}
+        
+        Last message received: {last_message}
+        
+        Respond naturally as your character would, keeping in mind your role and backstory.
+        Keep the response concise but engaging, and stay in character.
+        """
+        
+        # Create a Task object with required fields
+        task = Task(
+            prompt=prompt,
+            description="Generate a conversational response",
+            expected_output="A natural and engaging response"
+        )
+        
+        return participant.agent.execute_task(task)

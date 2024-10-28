@@ -1,8 +1,7 @@
-from crewai import Crew, Agent
+from crewai import Crew
 from agents import AgentFactory
-from tasks import TaskFactory
 from models import Message, Participant, ConversationMetrics, ChatHistory
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 import streamlit as st
 import logging
@@ -18,6 +17,8 @@ if 'is_simulating' not in st.session_state:
     st.session_state.is_simulating = False
 if 'participants' not in st.session_state:
     st.session_state.participants = []
+if 'conversation_turn' not in st.session_state:
+    st.session_state.conversation_turn = 0
 
 st.title("AI Chat Simulation POC")
 
@@ -45,12 +46,17 @@ with chat_col:
     
     # Start simulation button
     if st.button("Start Simulation"):
+        # Create agents for both participants
+        agent1 = AgentFactory.create_conversation_agent(char1_name, char1_role, char1_backstory)
+        agent2 = AgentFactory.create_conversation_agent(char2_name, char2_role, char2_backstory)
+        
         st.session_state.chat_history.start_conversation()
         st.session_state.participants = [
-            Participant(char1_name, char1_role, char1_backstory),
-            Participant(char2_name, char2_role, char2_backstory)
+            Participant(char1_name, char1_role, char1_backstory, agent1),
+            Participant(char2_name, char2_role, char2_backstory, agent2)
         ]
         st.session_state.is_simulating = True
+        st.session_state.conversation_turn = 0
         logger.info("Starting new simulation...")
     
     # Display chat history
@@ -65,17 +71,38 @@ with chat_col:
         # Simulate a conversation exchange
         time.sleep(3)  # Add delay between messages
         
-        # For now, just simulate basic exchanges
-        # This will be replaced with actual CrewAI agent interactions
-        if len(st.session_state.chat_history.messages) < 6:  # Limit to 3 exchanges
+        # Maximum turns for the conversation
+        MAX_TURNS = 5
+        
+        if st.session_state.conversation_turn < MAX_TURNS:
             char1, char2 = st.session_state.participants
+            current_sender = char1 if st.session_state.conversation_turn % 2 == 0 else char2
             
-            if len(st.session_state.chat_history.messages) % 2 == 0:
-                message = f"Hi, I'm {char1.name} and I'm interested in {char1.role}."
-                st.session_state.chat_history.add_message(char1.name, message)
+            # Get conversation history
+            conversation_history = [
+                f"{msg.sender}: {msg.content}"
+                for msg in st.session_state.chat_history.get_all_messages()
+            ]
+            
+            # Generate response using the agent
+            if st.session_state.conversation_turn == 0:
+                # First message is an introduction
+                message = AgentFactory.create_response(
+                    current_sender,
+                    [],
+                    "Start the conversation with an introduction"
+                )
             else:
-                message = f"Nice to meet you! I'm {char2.name}, {char2.role}."
-                st.session_state.chat_history.add_message(char2.name, message)
+                # Generate response based on conversation history
+                last_message = st.session_state.chat_history.messages[-1].content
+                message = AgentFactory.create_response(
+                    current_sender,
+                    conversation_history,
+                    last_message
+                )
+            
+            st.session_state.chat_history.add_message(current_sender.name, message)
+            st.session_state.conversation_turn += 1
             
             st.rerun()
         else:
@@ -90,6 +117,7 @@ with analytics_col:
     # Display metrics
     st.metric("Total Messages", metrics.messages_count)
     st.metric("Conversation Duration (s)", round(metrics.conversation_duration, 1))
+    st.metric("Conversation Turns", st.session_state.conversation_turn)
     
     # Create a section for logs
     st.subheader("Activity Log")
