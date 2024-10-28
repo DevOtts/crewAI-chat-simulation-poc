@@ -1,14 +1,44 @@
-from crewai import Crew
+from crewai import Crew, Task
 from agents import AgentFactory
 from models import Message, Participant, ConversationMetrics, ChatHistory
 from datetime import datetime
 import time
 import streamlit as st
 import logging
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def parse_profile(profile: str) -> tuple:
+    """Parse a profile string into name, role, and backstory"""
+    try:
+        name_match = re.search(r'Name:\s*(.*?)(?=\s*Role:)', profile, re.DOTALL)
+        role_match = re.search(r'Role:\s*(.*?)(?=\s*Backstory:)', profile, re.DOTALL)
+        backstory_match = re.search(r'Backstory:\s*(.*?)(?=\s*(?:Name:|$))', profile, re.DOTALL)
+        
+        name = name_match.group(1).strip() if name_match else ""
+        role = role_match.group(1).strip() if role_match else ""
+        backstory = backstory_match.group(1).strip() if backstory_match else ""
+        
+        return name, role, backstory
+    except Exception as e:
+        logger.error(f"Error parsing profile: {e}")
+        return "", "", ""
+
+def extract_profiles(text: str) -> tuple:
+    """Extract two profiles from the generated text"""
+    # Split on double newline or when finding a new "Name:" section
+    profiles = re.split(r'\n\n(?=Name:)|(?=Name:)', text)
+    # Filter out empty strings and clean up
+    profiles = [p.strip() for p in profiles if p.strip()]
+    
+    if len(profiles) >= 2:
+        return profiles[0], profiles[1]
+    else:
+        logger.error(f"Could not find two profiles in text: {text}")
+        return "", ""
 
 # Initialize session state
 if 'chat_history' not in st.session_state:
@@ -26,39 +56,65 @@ st.title("AI Chat Simulation POC")
 chat_col, analytics_col = st.columns([2, 1])
 
 with chat_col:
-    st.header("Character Setup")
+    st.header("Conversation Setup")
     
-    # Character 1 setup
-    st.subheader("Character 1")
-    char1_name = st.text_input("Name", "Alice", key="char1_name")
-    char1_role = st.text_input("Role", "Tech Enthusiast", key="char1_role")
-    char1_backstory = st.text_area("Backstory", 
-        "A passionate tech enthusiast who loves discussing AI and future technologies.", 
-        key="char1_backstory")
-    
-    # Character 2 setup
-    st.subheader("Character 2")
-    char2_name = st.text_input("Name", "Bob", key="char2_name")
-    char2_role = st.text_input("Role", "Philosophy Student", key="char2_role")
-    char2_backstory = st.text_area("Backstory", 
-        "A philosophy student interested in the ethical implications of AI.", 
-        key="char2_backstory")
-    
-    # Start simulation button
-    if st.button("Start Simulation"):
-        # Create agents for both participants
-        agent1 = AgentFactory.create_conversation_agent(char1_name, char1_role, char1_backstory)
-        agent2 = AgentFactory.create_conversation_agent(char2_name, char2_role, char2_backstory)
+    # Create a button to generate characters
+    if st.button("Generate Characters"):
+        # Create manager agent
+        manager_agent = AgentFactory.create_manager_agent()
         
-        st.session_state.chat_history.start_conversation()
-        st.session_state.participants = [
-            Participant(char1_name, char1_role, char1_backstory, agent1),
-            Participant(char2_name, char2_role, char2_backstory, agent2)
-        ]
-        st.session_state.is_simulating = True
-        st.session_state.conversation_turn = 0
-        logger.info("Starting new simulation...")
-    
+        # Create task for generating character profiles
+        profiles_task = Task(
+            description="Create two unique and interesting character profiles for a conversation. Make them have contrasting viewpoints or backgrounds to create engaging dialogue.",
+            expected_output="""Two character profiles in the following format:
+            Name: [character name]
+            Role: [character role]
+            Backstory: [detailed backstory]
+
+            Name: [character name]
+            Role: [character role]
+            Backstory: [detailed backstory]"""
+        )
+        
+        # Generate profiles
+        profiles = manager_agent.execute_task(profiles_task)
+        
+        # Parse and store profiles in session state
+        profile1, profile2 = extract_profiles(profiles)
+        
+        if profile1 and profile2:
+            st.session_state.profile1 = profile1
+            st.session_state.profile2 = profile2
+            st.rerun()
+        else:
+            st.error("Failed to generate valid character profiles. Please try again.")
+
+    # Display generated profiles if they exist
+    if 'profile1' in st.session_state:
+        st.subheader("Generated Characters")
+        with st.expander("Character 1", expanded=True):
+            st.text(st.session_state.profile1)
+        with st.expander("Character 2", expanded=True):
+            st.text(st.session_state.profile2)
+        
+        # Start simulation button
+        if st.button("Start Simulation"):
+            # Parse profiles and create agents
+            char1_name, char1_role, char1_backstory = parse_profile(st.session_state.profile1)
+            char2_name, char2_role, char2_backstory = parse_profile(st.session_state.profile2)
+            
+            agent1 = AgentFactory.create_character_agent(char1_name, char1_role, char1_backstory)
+            agent2 = AgentFactory.create_character_agent(char2_name, char2_role, char2_backstory)
+            
+            st.session_state.chat_history.start_conversation()
+            st.session_state.participants = [
+                Participant(char1_name, char1_role, char1_backstory, agent1),
+                Participant(char2_name, char2_role, char2_backstory, agent2)
+            ]
+            st.session_state.is_simulating = True
+            st.session_state.conversation_turn = 0
+            logger.info("Starting new simulation...")
+
     # Display chat history
     st.subheader("Conversation")
     for msg in st.session_state.chat_history.get_all_messages():

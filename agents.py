@@ -8,7 +8,7 @@ class AgentFactory:
     def create_character_agent(name: str, role: str, backstory: str) -> Agent:
         return Agent(
             role=role,
-            goal=f"Engage in natural conversation as {name} based on the given backstory",
+            goal=f"Engage in a natural and short conversation as {name} based on the given backstory",
             backstory=dedent(backstory),
             verbose=True,
             allow_delegation=False,
