@@ -1,21 +1,24 @@
 # CrewAI Chat Simulation POC
 
-This proof of concept demonstrates the capabilities of CrewAI by simulating a managed conversation between two AI agents with analytics tracking.
+This proof of concept demonstrates the capabilities of CrewAI by simulating a managed conversation between two AI agents with analytics tracking, using a Streamlit web interface.
+
+![Streamlit UI Screenshot](/blob/streamlit-ui.png)
 
 ## Overview
 
 This POC implements a chat simulation system with the following features:
 
-1. **Automated Conversation**: Two AI agents engage in natural conversation based on their assigned personas
-2. **Image Sharing Management**: A manager agent ensures that 10-15% of messages include images
-3. **Analytics Tracking**: An analytics agent monitors conversation metrics and generates reports every 10 interactions
+1. **AI-Generated Characters**: Automatically generates two unique characters with contrasting backgrounds and viewpoints
+2. **Automated Conversation**: Two AI agents engage in natural conversation based on their generated personas
+3. **Real-time Analytics**: Tracks conversation metrics and displays them in real-time
+4. **Interactive UI**: Built with Streamlit for easy interaction and visualization
 
 ### Key Components
 
-- **Character Agents**: AI-powered conversationalists with unique personas
-- **Manager Agent**: Oversees conversation flow and image sharing ratios
-- **Analytics Agent**: Tracks metrics and generates performance reports
-- **Conversation Metrics**: Tracks message counts, image ratios, and engagement patterns
+- **Character Generation**: AI-powered creation of unique personas
+- **Conversation Agents**: Dynamic interaction between generated characters
+- **Analytics Dashboard**: Real-time tracking of message counts and conversation duration
+- **Interactive Controls**: Start/stop simulation and view conversation progress
 
 ## Setup Instructions
 
@@ -32,44 +35,67 @@ This POC implements a chat simulation system with the following features:
    cd crewai-chat-simulation
    ```
 
-2. Install required packages:
+2. Create and activate a virtual environment (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. Install required packages:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables:
-   - Create a `.env` file in the project root
-   - Add your OpenAI API key:
+4. Set up environment variables:
+   - Copy `env.example` to `.env`:
+     ```bash
+     cp env.example .env
+     ```
+   - Edit `.env` and add your OpenAI API key:
      ```
      OPENAI_API_KEY=your_api_key_here
      ```
 
-### Usage
+### Running the Application
 
-1. Start the simulation:
+1. Start the Streamlit application:
    ```bash
-   python main.py
+   streamlit run main.py
    ```
 
-2. The simulation will:
-   - Create two AI characters with unique personas
-   - Run conversations between them
-   - Generate analytics reports every 10 interactions
-   - Continue for 24 hours (configurable)
+2. The application will open in your default web browser
+
+### Using the Application
+
+1. **Generate Characters**:
+   - Click the "Generate Characters" button
+   - Review the generated character profiles
+   - Characters are created with contrasting viewpoints for engaging dialogue
+
+2. **Start Simulation**:
+   - Click "Start Simulation" to begin the conversation
+   - Watch as the characters engage in natural dialogue
+   - The conversation runs for 5 turns by default
+
+3. **Monitor Analytics**:
+   - View real-time metrics in the right panel
+   - Track message counts and conversation duration
+   - Review the activity log for a history of interactions
 
 ## Project Structure
 
-- `main.py`: Entry point and simulation controller
-- `agents.py`: Agent factory and configuration
-- `tasks.py`: Task definitions and factory
+- `main.py`: Streamlit application and main logic
+- `agents.py`: Agent factory and conversation management
 - `models.py`: Data models for messages and metrics
+- `requirements.txt`: Project dependencies
 
 ## Monitoring
 
-The simulation provides real-time feedback:
-- Console output shows conversation progress
-- Analytics reports display every 10 interactions
-- Message and image ratios are continuously monitored
+The simulation provides real-time feedback through the Streamlit UI:
+- Live conversation display
+- Message count metrics
+- Conversation duration tracking
+- Activity log with timestamps
 
 ## Contributing
 
@@ -80,3 +106,21 @@ The simulation provides real-time feedback:
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Troubleshooting
+
+If you encounter issues:
+
+1. Ensure your OpenAI API key is correctly set in `.env`
+2. Check that all dependencies are installed
+3. Verify Python version compatibility
+4. Clear Streamlit cache if experiencing UI issues:
+   ```bash
+   streamlit cache clear
+   ```
+
+## Notes
+
+- The simulation is limited to 5 turns by default (configurable in `main.py`)
+- Characters are randomly generated but ensure contrasting viewpoints
+- Responses have a 3-second delay to simulate natural conversation flow
