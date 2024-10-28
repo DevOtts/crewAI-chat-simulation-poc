@@ -2,6 +2,8 @@
 
 This proof of concept demonstrates the capabilities of CrewAI by simulating a managed conversation between two AI agents with analytics tracking.
 
+![Streamlit UI Screenshot](/blob/cli-screenshot.png)
+
 ## Overview
 
 This POC implements a chat simulation system with the following features:
