@@ -1,8 +1,10 @@
-# CrewAI Chat Simulation POC
+# CrewAI vs Langchain - Chat Simulation POC
 
-This proof of concept demonstrates the capabilities of CrewAI by simulating a managed conversation between two AI agents with analytics tracking.
+> ⚠️ **Note**: This project is currently under development and not all features are fully implemented. Some functionality may be missing or incomplete. Check back later for updates.
 
-![Streamlit UI Screenshot](/blob/cli-screenshot.png)
+
+This proof of concept demonstrates the capabilities of CrewAI vs Langchainby simulating a managed conversation between two AI agents with analytics tracking.
+
 
 # Python
 
