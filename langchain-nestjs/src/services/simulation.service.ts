@@ -66,4 +66,4 @@ export class SimulationService {
     // Implement profile parsing logic
     return [];
   }
-} 
+}

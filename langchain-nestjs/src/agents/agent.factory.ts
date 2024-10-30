@@ -27,7 +27,7 @@ export class AgentFactory {
     });
   }
 
-  convertMessageContentToString(content: MessageContent): string {
+  private convertMessageContentToString = (content: MessageContent): string => {
     if (typeof content === 'string') {
       return content;
     }
@@ -52,11 +52,12 @@ export class AgentFactory {
       return '[Image]';
     }
     return '';
-  }
+  };
 
   createCharacterAgent(name: string, role: string, backstory: string) {
     const model = this.createBaseModel(0.7);
     const parser = new StringOutputParser();
+    const convertContent = this.convertMessageContentToString;
 
     return {
       name,
@@ -64,11 +65,12 @@ export class AgentFactory {
       backstory,
       model,
       async generateResponse(context: string) {
+        console.log(`Generating response for ${name} with context: ${context}`);
         const response = await model.invoke([
           new SystemMessage(`You are ${name}, a ${role}, with the following backstory: ${backstory}`),
           new HumanMessage(context)
         ]);
-        const contentString = this.convertMessageContentToString(response.content);
+        const contentString = convertContent(response.content);
         return parser.invoke(contentString);
       }
     };
@@ -77,6 +79,7 @@ export class AgentFactory {
   createManagerAgent() {
     const model = this.createBaseModel(0.5);
     const parser = new StringOutputParser();
+    const convertContent = this.convertMessageContentToString;
 
     return {
       role: 'Conversation Manager',
@@ -86,7 +89,7 @@ export class AgentFactory {
           new SystemMessage('You are a conversation manager.'),
           new HumanMessage('Create two unique character profiles for a conversation. Include name, role, and backstory for each.')
         ]);
-        const contentString = this.convertMessageContentToString(response.content);
+        const contentString = convertContent(response.content);
         return parser.invoke(contentString);
       },
       async monitorConversation(messages: any[]) {
@@ -98,6 +101,7 @@ export class AgentFactory {
   createAnalyticsAgent() {
     const model = this.createBaseModel(0.3);
     const parser = new StringOutputParser();
+    const convertContent = this.convertMessageContentToString;
 
     return {
       role: 'Analytics Agent',
@@ -107,7 +111,7 @@ export class AgentFactory {
           new SystemMessage('You are an analytics agent that analyzes conversations.'),
           new HumanMessage(`Analyze the following conversation and generate a report: ${JSON.stringify(messages)}`)
         ]);
-        const contentString = this.convertMessageContentToString(response.content);
+        const contentString = convertContent(response.content);
         return parser.invoke(contentString);
       }
     };
